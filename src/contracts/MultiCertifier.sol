@@ -6,7 +6,7 @@ pragma solidity ^0.4.16;
 
 // From Owned.sol
 contract Owned {
-	modifier only_owner { require (msg.sender == owner); _; }
+	modifier only_owner { if (msg.sender != owner) return; _; }
 
 	event NewOwner(address indexed old, address indexed current);
 
