@@ -397,7 +397,7 @@ contract SecondPriceAuction {
 	/// parity.api.util.sha3(parity.api.util.asciiToHex("\x19Ethereum Signed Message:\n" + tscs.length + tscs))
 	/// where `toUTF8 = x => unescape(encodeURIComponent(x))`
 	/// and `tscs` is the toUTF8 called on the contents of https://gist.githubusercontent.com/gavofyork/5a530cad3b19c1cafe9148f608d729d2/raw/a116b507fd6d96036037f3affd393994b307c09a/gistfile1.txt
-	bytes32 constant public STATEMENT_HASH = 0xd87d0dae4b9f63ce9181efe09b9d19fec032af3f30a4aae73bf7881193f48649;
+	bytes32 constant public STATEMENT_HASH = 0x2cedb9c5443254bae6c4f44a31abcb33ec27a0bd03eb58e22e38cdb8b366876d;
 
 	/// Minimum duration after sale begins that bonus is active.
 	uint constant public BONUS_MIN_DURATION = 1 hours;

@@ -1,55 +1,24 @@
 import moment from 'moment';
-import marked from 'marked';
+import ReactMarkdown from 'react-markdown';
 import countries from 'i18n-iso-countries';
 import React from 'react';
 import BigNumber from 'bignumber.js';
 import {Button, Checkbox, Label, Flag, Message, Segment, Form, Divider} from 'semantic-ui-react';
 import {Bond, TransformBond, ReactivePromise} from 'oo7';
-import {hexToAscii, capitalizeFirstLetter, removeSigningPrefix, singleton, formatBlockNumber, bonds} from 'oo7-parity';
+import {hexToAscii, asciiToHex, sha3, capitalizeFirstLetter, removeSigningPrefix, singleton, formatBlockNumber, bonds} from 'oo7-parity';
 import {Rdiv, Rspan, ReactiveComponent} from 'oo7-react';
 import {AccountIcon, BalanceBond, DropdownBond, TransactButton, SigningProgressLabel, InlineBalance} from 'parity-reactive-ui';
 import {DutchAuctionABI, CertifierABI} from './abis.jsx';
+import {tokenStatement} from './tsandcs.jsx';
 
+function toUTF8(x) {
+	return unescape(encodeURIComponent(x));
+}
+
+let tscs = asciiToHex(toUTF8(tokenStatement));
+console.log(`Hash is ${sha3(asciiToHex("\x19Ethereum Signed Message:\n" + (tscs.length / 2 - 1)) + tscs.substr(2))}`)
 const tokenDivisor = 1000;
 const tokenTLA = 'DOT';
-const tokenStatement = `Please take my Ether and try to build Polkadot.`;
-/*const tokenStatement = `# Polkadot (Spend-all Second-price) Auction Dapp.
-
-To install:
-
-    $ npm install
-    $ npm install -g webpack
-
-To build:
-
-    webpack --watch
-
-Files will be build into \`dist/\`. Just symlink that dir into your dapps path.
-# Polkadot (Spend-all Second-price) Auction Dapp.
-
-To install:
-
-    $ npm install
-    $ npm install -g webpack
-
-To build:
-
-    webpack --watch
-
-Files will be build into \`dist/\`. Just symlink that dir into your dapps path.
-# Polkadot (Spend-all Second-price) Auction Dapp.
-
-To install:
-
-    $ npm install
-    $ npm install -g webpack
-
-To build:
-
-    webpack --watch
-
-Files will be build into \`dist/\`. Just symlink that dir into your dapps path.
-`;*/
 
 class TokenBalance extends ReactiveComponent {
 	constructor () {
@@ -346,7 +315,7 @@ class Manager extends ReactiveComponent {
 	handleSign () {
 		let that = this;
 		bonds.me.then(me => {
-			let signReq = bonds.sign(tokenStatement, me);
+			let signReq = bonds.sign(toUTF8(tokenStatement), me);
 			let signing = bonds.me.map(newMe => me === newMe ? signReq : null);
 			that.setState({signing});
 		});
@@ -365,7 +334,7 @@ class Manager extends ReactiveComponent {
 			<section id='terms'>
 				<h1>Terms and Conditions</h1>
 				<Segment>
-					<div style={{overflowY: 'scroll', height: '400px'}} dangerouslySetInnerHTML={{__html: marked(tokenStatement)}} />
+					<div style={{overflowY: 'scroll', height: '400px'}}><ReactMarkdown source={tokenStatement}/></div>
 				</Segment>
 				<TermsPanel
 				  request={this.state.signing}
@@ -584,6 +553,10 @@ export class App extends ReactiveComponent {
 			bonus: DutchAuction().bonus(100),
 		});
 		window.bonds = bonds;
+		window.sha3 = sha3;
+		window.toUTF8 = toUTF8;
+		window.asciiToHex = asciiToHex;
+		window.hexToAscii = hexToAscii;
 		window.DutchAuction = DutchAuction;
 		window.DutchAuctionABI = DutchAuctionABI;
 		window.Certifier = Certifier;
