@@ -32,7 +32,7 @@ contract SecondPriceAuction {
 	event Injected(address indexed who, uint accounted, uint received);
 
 	/// Admin uninjected a purchase.
-	event Injected(address indexed who);
+	event Uninjected(address indexed who);
 
 	/// At least 5 minutes has passed since last Ticked event.
 	event Ticked(uint era, uint received, uint accounted);
