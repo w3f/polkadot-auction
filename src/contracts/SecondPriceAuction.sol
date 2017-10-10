@@ -392,15 +392,7 @@ contract SecondPriceAuction {
 	uint constant public DUST_LIMIT = 5 finney;
 
 	/// The hash of the statement which must be signed in order to buyin.
-	bytes32 constant public STATEMENT_HASH = keccak256(STATEMENT);
-
-	/// The statement which should be signed.
-	string constant public STATEMENT = "\x19Ethereum Signed Message:\n47Please take my Ether and try to build Polkadot.";
-
-	//# Statement to actually sign.
-	//# ```js
-	//# statement = function() { this.STATEMENT().map(s => s.substr(28)) }
-	//# ```
+	bytes32 constant public STATEMENT_HASH = 0xd87d0dae4b9f63ce9181efe09b9d19fec032af3f30a4aae73bf7881193f48649;
 
 	/// Minimum duration after sale begins that bonus is active.
 	uint constant public BONUS_MIN_DURATION = 1 hours;
