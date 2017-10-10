@@ -183,7 +183,7 @@ function endTimeBond(weiPerDOT) {
 			USDWEI.mul(40000000)
 				.div(wpD.add(USDWEI.mul(5)))
 		) * 1000)
-	).subscriptable();
+	);
 }
 
 let gasCostOptions = [
