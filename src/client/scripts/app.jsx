@@ -164,7 +164,7 @@ let gasCostOptions = [
 	{ value: 1000000000000, text: 'Miners\' Payday (< $60)' }
 ];
 
-class PrecontributionPanel extends ReactiveComponent {
+class ContributionPanel extends ReactiveComponent {
 	constructor() {
 		super(['request', 'signature'], {
 			minPurchase: DutchAuction().currentPrice(),
@@ -343,7 +343,7 @@ class Manager extends ReactiveComponent {
 			  </section>
 			  <section id='action'>
 				<h1>{this.props.active ? 'Send Funds' : 'Pre-Commit Funds'}</h1>
-				<PrecontributionPanel
+				<ContributionPanel
 				  signature={this.state.signing ? this.state.signing.map(s => (s && s.signed || null)) : null}
 				  isActive={this.props.active}
 	              request={this.state.contribution}
@@ -369,6 +369,21 @@ class Bouncer extends ReactiveComponent {
 			<Manager active={this.state.status && this.state.status.active}/>
 		  </div>)
   		  : (<h2 style={{textAlign: 'center', margin: '10em'}}>This account is not registered to any identity. Please ensure you have associated the account with a valid document through any of the identity providers.</h2>);
+	}
+}
+
+class ItsOver extends ReactiveComponent {
+	constructor() {
+		super([], {});
+	}
+
+	render () {
+        return (<div style={{margin: '10em'}}>
+			<h2 style={{textAlign: 'center'}}>The auction is over.</h2>
+			<h3 style={{textAlign: 'center'}}>
+				Thank you to all who participated.
+			</h3>
+		</div>);
 	}
 }
 
@@ -448,43 +463,46 @@ class AuctionSummary extends ReactiveComponent {
 	}
 }
 
+function makeEras() {
+	let earliestBlock = DutchAuction().Ticked({limit: 1}).map(x => x.blockNumber - 2*7*24*60*4);
+	let ticks = DutchAuction().Ticked({limit: 50000, startBlock: earliestBlock});
+	return Bond.mapAll([
+		DutchAuction().ERA_PERIOD(),
+		DutchAuction().tokenCap(),
+		DutchAuction().USDWEI(),
+		ticks,
+		DutchAuction().totalAccounted(),
+		DutchAuction().eraIndex(),
+		Bond.mapAll([
+			DutchAuction().ERA_PERIOD(),
+			DutchAuction().beginTime(),
+			bonds.time
+		], (p, b, n) => Math.ceil((n / 1000 - b) / p))
+	], (eraPeriod, tokenCap, usdWei, ticks, latestAccounted, latestEra, era) => {
+		let erasAccounted = [];
+		let erasCap = [];
+		let last = Math.max(era, latestEra);
+		for (let i = 0, j = 0; i <= last; ++i) {
+			if (i >= latestEra) {
+				erasAccounted.push(+latestAccounted);
+			}
+			else if (j >= ticks.length || ticks[j].era > i) {
+				erasAccounted.push(erasAccounted.length > 0 ? erasAccounted[erasAccounted.length - 1] : 0);
+			} else {
+				erasAccounted.push(+ticks[j].accounted);
+				j++;
+			}
+		}
+		erasAccounted.unshift(0);
+		erasCap = erasAccounted.map((_, i) => erasCap.push(+tokenCap.div(1000).mul(usdWei.mul(18432000).div(eraPeriod.mul(i).add(5760)).sub(usdWei.mul(5)))));
+		return {erasAccounted, erasCap};
+	});
+}
+
 class ActiveHero extends ReactiveComponent {
 	constructor () {
 		super();
-		let earliestBlock = DutchAuction().Ticked({limit: 1}).map(x => x.blockNumber - 2*7*24*60*4);
-		let ticks = DutchAuction().Ticked({limit: 50000, startBlock: earliestBlock});
-		this.eras = Bond.mapAll([
-			DutchAuction().ERA_PERIOD(),
-			DutchAuction().tokenCap(),
-			DutchAuction().USDWEI(),
-			ticks,
-			DutchAuction().totalAccounted(),
-			DutchAuction().eraIndex(),
-			Bond.mapAll([
-				DutchAuction().ERA_PERIOD(),
-				DutchAuction().beginTime(),
-				bonds.time
-			], (p, b, n) => Math.ceil((n / 1000 - b) / p))
-		], (eraPeriod, tokenCap, usdWei, ticks, latestAccounted, latestEra, era) => {
-			let erasAccounted = [];
-			let erasCap = [];
-			let last = Math.max(era, latestEra);
-			for (let i = 0, j = 0; i <= last; ++i) {
-				if (i >= latestEra) {
-					erasAccounted.push(+latestAccounted);
-				}
-				else if (j >= ticks.length || ticks[j].era > i) {
-					erasAccounted.push(erasAccounted.length > 0 ? erasAccounted[erasAccounted.length - 1] : 0);
-				} else {
-					erasAccounted.push(+ticks[j].accounted);
-					j++;
-				}
-			}
-			erasAccounted.unshift(0);
-			erasCap = erasAccounted.map((_, i) => erasCap.push(+tokenCap.div(1000).mul(usdWei.mul(18432000).div(eraPeriod.mul(i).add(5760)).sub(usdWei.mul(5)))));
-			return {erasAccounted, erasCap};
-		});
-		window.ticks = ticks;
+		this.eras = makeEras();
 		window.eras = this.eras;
 	}
 
@@ -496,11 +514,32 @@ class ActiveHero extends ReactiveComponent {
 				<Subtitling />
 			  </div>
 			  <div id='status-rest' style={{textAlign:'center'}}>
-		  	  	<Eras data={eras} width={400} height={96}/>
+		  	  	<Eras data={this.eras} width={400} height={96}/>
 				<AuctionSummary />
 			  </div>
 			</div>);
-		}
+	}
+}
+
+class DoneHero extends ReactiveComponent {
+	constructor () {
+		super([], { totalReceived: DutchAuction().totalReceived() });
+	}
+
+	readyRender () {
+		return (
+			<div id='status'>
+			  <div style={{margin: '1.5em auto'}}>
+				<h3 style={{textAlign: 'center'}}>
+					Auction closed <Rspan>{DutchAuction().endTime().map(t => moment.unix(t).fromNow())}</Rspan>
+				</h3>
+				<h3 style={{textAlign: 'center'}}>
+					<InlineBalance value={this.state.totalReceived} precise units='ether' /> raised in total
+				</h3>
+			  </div>
+			</div>
+		);
+	}
 }
 
 class CountdownHero extends ReactiveComponent {
@@ -578,8 +617,10 @@ export class App extends ReactiveComponent {
 			  <section className='contrib-hero'>
 				<div className='container'>
 				  <div className='row'>{
-					this.state.isActive || this.state.allFinalised
+					  this.state.isActive
 					  ? <ActiveHero />
+					  : +this.state.totalAccounted > 0
+					  ? <DoneHero />
 					  : <CountdownHero />
 				  }</div>
 				</div>
@@ -613,7 +654,7 @@ export class App extends ReactiveComponent {
 			  <section className='contrib-main'>
 				<div className='container'>
 				  <div className='row'>
-					<Bouncer />
+					{+this.state.totalAccounted > 0 && !this.state.isActive ? (<ItsOver />) : <Bouncer />}
 				  </div>
 				</div>
 			  </section>
