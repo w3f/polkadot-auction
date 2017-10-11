@@ -99,7 +99,7 @@ contract FrozenToken is Owned {
 	mapping (address => Account) accounts;
 
 	// Conventional metadata.
-	string public constant name = "Frozen Token";
-	string public constant symbol = "FRZ";
+	string public constant name = "DOT Allocation Indicator";
+	string public constant symbol = "DOT";
 	uint8 public constant decimals = 3;
 }
